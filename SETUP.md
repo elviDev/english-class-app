@@ -30,16 +30,21 @@ accepting the defaults.
    - **anon public** key
    - **service_role** key, click "Reveal" to see it. This one is powerful and must stay
      completely private (more on this below).
-7. Go to **Authentication → URL Configuration** and add your app's address to **Redirect URLs**:
-   `http://localhost:3000/**` for local testing, and (once deployed) your live address too, e.g.
-   `https://elvidev.vercel.app/**`. This is what lets Supabase send someone back into this app
-   after they click a "reset your password" email.
-8. Go to **Authentication → Email Templates → Reset Password** and replace the template's link
-   with:
+7. Go to **Authentication → URL Configuration** and set:
+   - **Site URL**: your live address, e.g. `https://elvidev.vercel.app` (not `localhost`, this is
+     the one field every auth email is built from, regardless of where a request came from).
+   - **Redirect URLs**: add `http://localhost:3000/**` for local testing, and your live address
+     too, e.g. `https://elvidev.vercel.app/**`.
+   This is what lets Supabase send someone back into this app after they click a "reset your
+   password" email.
+8. (Optional) Free Supabase projects can no longer edit auth email templates unless a custom SMTP
+   provider is configured (Authentication → Emails), so this app is built to work with the
+   default "Reset Password" template as-is, no template edits required. If you do set up your own
+   SMTP later and want the reset link to carry your own branding, you can then edit
+   **Authentication → Email Templates → Reset Password** and point its link at:
    ```
    {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next={{ .RedirectTo }}
    ```
-   so the link lands on this app's own confirmation page instead of a generic Supabase one.
 
 ## Step 2: Get a free Gemini API key (for the AI Study Buddy)
 
