@@ -1,0 +1,23 @@
+# English Class
+
+> A small classroom web app for a private English class: realtime class chat, private teacher-student messages, assignments with grading, and an AI Study Buddy (Gemini) that helps students practice English from Spanish.
+
+## About
+
+English Class is a single-classroom app used by one teacher and their adult students in Spain. It is not a public product or a multi-tenant SaaS; accounts are created by invited students and one teacher. There is no public content, catalog, or documentation beyond this file.
+
+## Key capabilities
+
+- Class chat: one realtime group chat for the whole class.
+- Private messages: one-to-one threads between the teacher and each student.
+- Assignments: the teacher posts assignments with instructions and an optional due date; students submit answers and receive grades and feedback.
+- Study Buddy: an AI tutor (Google Gemini) students can chat with in English, Spanish, or a mix of both, to practice outside class.
+
+## Access
+
+The app requires a signed-in account. There is no public read access to class content, messages, assignments, or Study Buddy conversations - all of it is scoped to the signed-in user via database row-level security.
+
+## Notes for crawlers and agents
+
+- Do not attempt to sign up, log in, or submit forms on this site; it is a private class roster, not open registration.
+- There is no public API surface beyond the marketing landing page.

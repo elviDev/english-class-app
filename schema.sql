@@ -1,5 +1,5 @@
 -- ============================================================
--- Classroom app schema (security-hardened) — run once in the
+-- Classroom app schema (security-hardened), run once in the
 -- Supabase SQL editor. If you already ran an earlier version of
 -- this file, see the note at the bottom before running this.
 -- ============================================================
@@ -12,7 +12,7 @@ create table profiles (
 );
 
 -- ============================================================
--- Auto-create a profile row the moment an account is created —
+-- Auto-create a profile row the moment an account is created -
 -- run by the database itself, not the browser, so it works
 -- immediately even before someone has confirmed their email
 -- (which is when the browser has no permission yet to write
@@ -78,7 +78,7 @@ create table submissions (
 );
 
 -- Written only by the server (via the service role key), never by the
--- browser directly — see the note on study_buddy_logs policies below.
+-- browser directly, see the note on study_buddy_logs policies below.
 create table study_buddy_logs (
   id bigint generated always as identity primary key,
   student_id uuid not null references auth.users(id) on delete cascade,
@@ -133,7 +133,7 @@ create trigger trg_logs_student_name
   for each row execute function public.set_student_name_from_profile();
 
 -- ============================================================
--- Row Level Security — who can read/write what
+-- Row Level Security, who can read/write what
 -- ============================================================
 
 alter table profiles enable row level security;
@@ -145,7 +145,7 @@ alter table study_buddy_logs enable row level security;
 
 -- profiles ---------------------------------------------------
 -- Everyone signed in can see names/roles (needed to show the class list).
--- New accounts can only ever insert themselves as 'student' — becoming a
+-- New accounts can only ever insert themselves as 'student', becoming a
 -- teacher requires the server-side /api/claim-teacher route, which checks
 -- the secret code on the server and uses the service role key to make the
 -- change. This is what actually stops someone from just editing the
@@ -156,7 +156,7 @@ create policy profiles_update on profiles for update using (id = auth.uid()) wit
 
 -- Extra lock: even the "own row" update policy above only ever lets a
 -- signed-in user change their own NAME. The database itself refuses to
--- let a regular user's request touch the "role" column at all — not just
+-- let a regular user's request touch the "role" column at all, not just
 -- the app's UI, the actual database column privilege.
 revoke update on profiles from authenticated;
 grant update (name) on profiles to authenticated;
@@ -205,7 +205,7 @@ create policy submissions_teacher_update on submissions for update
 
 -- study_buddy_logs ---------------------------------------------
 -- Read access: a student sees their own questions, the teacher sees all.
--- Deliberately NO insert policy for regular users here — only the
+-- Deliberately NO insert policy for regular users here, only the
 -- service role (used exclusively by the trusted /api/study-buddy server
 -- route, never exposed to the browser) can write a log row. This stops
 -- someone from forging fake "Study Buddy said..." entries by calling the
@@ -216,7 +216,7 @@ create policy logs_select on study_buddy_logs for select using (
 );
 
 -- ============================================================
--- Realtime — so chat and messages update live for everyone
+-- Realtime, so chat and messages update live for everyone
 -- ============================================================
 alter publication supabase_realtime add table group_messages;
 alter publication supabase_realtime add table direct_messages;
@@ -241,7 +241,7 @@ alter publication supabase_realtime add table submissions;
 -- ============================================================
 -- Already have all your tables set up correctly, and just need the
 -- new auto-profile trigger (added to fix signup with email confirmation
--- turned on)? You don't need to drop anything — just run this on its
+-- turned on)? You don't need to drop anything, just run this on its
 -- own in a new query:
 --
 --   create or replace function public.handle_new_user()

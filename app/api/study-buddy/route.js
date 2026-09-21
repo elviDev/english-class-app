@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { studyBuddyRequestSchema } from "@/schemas/study-buddy";
 
 const SYSTEM_INSTRUCTION = `You are "Study Buddy," a patient, encouraging English tutor inside a
 small English class app for adult students in Spain. Every student here is a native Spanish
 speaker. Many are over 60 and some are complete beginners; others have more experience. You are
 here to help them practice ON THEIR OWN, between classes.
 
-Language handling — this matters a lot:
+Language handling, this matters a lot:
 - Assume the student may write to you in Spanish, English, or a mix of both, and understand
   Spanish fully and naturally either way.
 - If they write in Spanish, understand exactly what they mean and reply in a way that teaches
@@ -17,29 +19,19 @@ Language handling — this matters a lot:
   English phrase first, prominently, then a one-line note on usage or pronunciation if useful.
 - If they write in English, stay in English so they get the practice, but you may drop in a
   short Spanish clarification in parentheses if a word or idiom is likely to confuse them.
-- Never make a student feel bad for using Spanish — it's expected and welcome here. The goal is
+- Never make a student feel bad for using Spanish, it's expected and welcome here. The goal is
   always to leave them a little more confident in English, not to police which language they use.
 
 How to respond:
 - Keep answers SHORT: a few sentences, not an essay. This is a chat, not a lecture.
 - Use simple, everyday words and short sentences yourself, so your own English is easy to read.
-- If they make a mistake in English, don't just correct it — show the corrected sentence AND
+- If they make a mistake in English, don't just correct it, show the corrected sentence AND
   explain why, in one short line.
 - Be warm and patient. Praise effort. Never sound impatient or robotic.
 - When it fits, end with ONE small follow-up question or a tiny practice task in English, so the
   conversation keeps them practicing rather than just answering.
 - If asked something totally unrelated to learning English, gently steer back to English
   practice.`;
-
-// A server-side (service role) client, used only inside this route to
-// verify who's asking and to write the activity log. Never send this
-// key to the browser.
-function adminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceKey || serviceKey.includes("YOUR_")) return null;
-  return createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
-}
 
 export async function POST(request) {
   let body;
@@ -49,29 +41,27 @@ export async function POST(request) {
     return NextResponse.json({ error: "Bad request." }, { status: 400 });
   }
 
-  const { message, history } = body || {};
-  if (!message || typeof message !== "string") {
-    return NextResponse.json({ error: "Missing message." }, { status: 400 });
+  const parsed = studyBuddyRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0]?.message || "Missing message." }, { status: 400 });
+  }
+  const { message, history } = parsed.data;
+
+  // Require a real, currently signed-in account (via the session cookie),
+  // this keeps the endpoint (and your free Gemini quota) restricted to
+  // your actual class, not open to anyone on the internet who finds the URL.
+  const supabase = await getSupabaseServerClient();
+  const { data: userData, error: userErr } = supabase ? await supabase.auth.getUser() : { data: null, error: true };
+  if (!supabase || userErr || !userData?.user) {
+    return NextResponse.json({ error: "You need to be signed in to use Study Buddy." }, { status: 401 });
   }
 
-  // Require a real, currently signed-in account — this keeps the endpoint
-  // (and your free Gemini quota) restricted to your actual class, not
-  // open to anyone on the internet who finds the URL.
-  const admin = adminClient();
+  const admin = getSupabaseAdminClient();
   if (!admin) {
     return NextResponse.json({ error: "Server isn't fully configured (missing service role key)." }, { status: 500 });
   }
-  const authHeader = request.headers.get("authorization") || "";
-  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-  if (!token) {
-    return NextResponse.json({ error: "You need to be signed in to use Study Buddy." }, { status: 401 });
-  }
-  const { data: userData, error: userErr } = await admin.auth.getUser(token);
-  if (userErr || !userData?.user) {
-    return NextResponse.json({ error: "Your session has expired — try logging in again." }, { status: 401 });
-  }
 
-  // Look up the student's real name from their profile — never trust a
+  // Look up the student's real name from their profile, never trust a
   // name the browser sends, so nobody can spoof "asking as" someone else.
   const { data: profile } = await admin.from("profiles").select("name").eq("id", userData.user.id).single();
   const studentName = profile?.name || "Student";
@@ -79,7 +69,7 @@ export async function POST(request) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey.includes("YOUR_")) {
     return NextResponse.json(
-      { error: "The Study Buddy isn't set up yet — the teacher needs to add a Gemini API key." },
+      { error: "The Study Buddy isn't set up yet, the teacher needs to add a Gemini API key." },
       { status: 500 }
     );
   }
@@ -88,14 +78,12 @@ export async function POST(request) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const contents = [];
-  if (Array.isArray(history)) {
-    for (const turn of history.slice(-10)) {
-      if (!turn?.text) continue;
-      contents.push({
-        role: turn.role === "ai" ? "model" : "user",
-        parts: [{ text: turn.text }],
-      });
-    }
+  for (const turn of history.slice(-10)) {
+    if (!turn?.text) continue;
+    contents.push({
+      role: turn.role === "ai" ? "model" : "user",
+      parts: [{ text: turn.text }],
+    });
   }
   contents.push({ role: "user", parts: [{ text: message }] });
 
@@ -136,14 +124,14 @@ export async function POST(request) {
   }
 
   // Log the exchange server-side, using the real verified student id/name
-  // and the real reply — never data the browser could have made up.
-  // If this fails, the student still gets their answer; we just skip the log.
-  admin.from("study_buddy_logs").insert({
-    student_id: userData.user.id,
-    student_name: studentName,
-    question: message,
-    answer: reply,
-  }).then(({ error }) => { if (error) console.error("Failed to log Study Buddy exchange:", error); });
+  // and the real reply, never data the browser could have made up. If
+  // this fails, the student still gets their answer; we just skip the log.
+  admin
+    .from("study_buddy_logs")
+    .insert({ student_id: userData.user.id, student_name: studentName, question: message, answer: reply })
+    .then(({ error }) => {
+      if (error) console.error("Failed to log Study Buddy exchange:", error);
+    });
 
   return NextResponse.json({ reply });
 }
