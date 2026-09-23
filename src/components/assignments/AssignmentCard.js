@@ -1,4 +1,5 @@
 import { CalendarDays } from "lucide-react";
+import { AssignmentFileLink } from "@/components/assignments/AssignmentFileLink";
 
 export function AssignmentCard({ children }) {
   return (
@@ -9,6 +10,8 @@ export function AssignmentCard({ children }) {
 }
 
 export function AssignmentMeta({ assignment }) {
+  const files = assignment.assignment_files ?? [];
+
   return (
     <>
       <h3 className="mb-0.5 text-lg">{assignment.title}</h3>
@@ -17,6 +20,13 @@ export function AssignmentMeta({ assignment }) {
         {assignment.due_date ? `Due ${assignment.due_date}` : "No due date"}
       </div>
       <div className="mb-3 whitespace-pre-wrap">{assignment.description}</div>
+      {files.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {files.map((file) => (
+            <AssignmentFileLink key={file.id} file={file} />
+          ))}
+        </div>
+      )}
     </>
   );
 }

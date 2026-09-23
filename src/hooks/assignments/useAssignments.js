@@ -6,7 +6,10 @@ import { queryKeys } from "@/lib/query-keys";
 
 async function fetchAssignments() {
   const supabase = getSupabaseBrowserClient();
-  const { data, error } = await supabase.from("assignments").select("*").order("created_at", { ascending: false });
+  const { data, error } = await supabase
+    .from("assignments")
+    .select("*, assignment_files(*)")
+    .order("created_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
 }

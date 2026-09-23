@@ -13,14 +13,26 @@ import { ChatInputForm } from "@/components/chat/ChatInputForm";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
 import { useDirectMessages } from "@/hooks/messages/useDirectMessages";
 import { useSendDirectMessage } from "@/hooks/messages/useSendDirectMessage";
+import { useDirectReactions } from "@/hooks/messages/useDirectReactions";
+import { useToggleDirectReaction } from "@/hooks/messages/useToggleDirectReaction";
 import { chatMessageSchema } from "@/schemas/chat";
+import { groupReactionsByMessage } from "@/lib/reactions";
 
 export function DirectMessageThread({ me, studentId, label, onBack }) {
   const { data: messages, isLoading } = useDirectMessages(studentId);
+  const { data: reactionRows } = useDirectReactions();
   const sendMessage = useSendDirectMessage(me);
+  const toggleReaction = useToggleDirectReaction(me);
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
   const scrollRef = useAutoScroll([messages]);
+
+  const reactionsByMessage = groupReactionsByMessage(reactionRows ?? [], me.id);
+
+  function handleToggleReaction(messageId, emoji) {
+    const existing = reactionsByMessage[messageId]?.find((r) => r.emoji === emoji);
+    toggleReaction.mutate({ messageId, emoji, reactionId: existing?.mine ? existing.mineReactionId : null });
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -49,13 +61,22 @@ export function DirectMessageThread({ me, studentId, label, onBack }) {
         {isLoading && <ChatSkeleton />}
         {messages?.length === 0 && <EmptyState>No messages yet.</EmptyState>}
         {messages?.map((m) => (
-          <ChatBubble key={m.id} mine={m.sender_id === me.id} name={m.sender_name} text={m.text} time={m.created_at} />
+          <ChatBubble
+            key={m.id}
+            mine={m.sender_id === me.id}
+            name={m.sender_name}
+            text={m.text}
+            time={m.created_at}
+            reactions={reactionsByMessage[m.id]}
+            onToggleReaction={(emoji) => handleToggleReaction(m.id, emoji)}
+          />
         ))}
       </ChatScroll>
       <ErrorBanner className="mt-2.5">{error}</ErrorBanner>
       <ChatInputForm
         value={input}
         onChange={(e) => setInput(e.target.value)}
+        onEmojiSelect={(emoji) => setInput((prev) => prev + emoji)}
         onSubmit={handleSubmit}
         placeholder="Write a private message…"
       />

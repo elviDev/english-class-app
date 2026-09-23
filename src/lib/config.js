@@ -13,3 +13,10 @@ export const site = {
   description: "Class chat, private messages, assignments, and an AI study buddy for a small English class.",
   url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
 };
+
+// Must match the bucket created in schema.sql (name, size limit, allowed types).
+export const assignmentFiles = {
+  bucket: "assignment-files",
+  maxSizeBytes: 15 * 1024 * 1024,
+  signedUrlTtlSeconds: 60,
+};

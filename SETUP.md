@@ -21,6 +21,13 @@ accepting the defaults.
    pick a region close to Spain.
 3. Open **SQL Editor** → **New query**, paste in everything from `schema.sql`, and click **Run**.
    You should see "Success. No rows returned."
+
+   Already have this project set up from before emoji reactions and assignment attachments
+   existed? Don't rerun the whole file, it would try to recreate tables you already have. Instead
+   scroll to the very bottom of `schema.sql`, to the block titled "Already have the app set up and
+   just want emoji reactions on messages and file attachments on assignments?", uncomment it (the
+   whole block is a single SQL comment, remove the leading `--` from each line), and run just
+   that in a new query.
 4. Go to **Authentication → Providers → Email** and turn **off** "Confirm email," so students can
    log in right after signing up.
 5. Go to **Authentication → Policies** (or **Auth settings**, depending on the dashboard version)

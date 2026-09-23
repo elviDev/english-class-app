@@ -11,14 +11,26 @@ import { ChatInputForm } from "@/components/chat/ChatInputForm";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
 import { useGroupMessages } from "@/hooks/chat/useGroupMessages";
 import { useSendGroupMessage } from "@/hooks/chat/useSendGroupMessage";
+import { useGroupReactions } from "@/hooks/chat/useGroupReactions";
+import { useToggleGroupReaction } from "@/hooks/chat/useToggleGroupReaction";
 import { chatMessageSchema } from "@/schemas/chat";
+import { groupReactionsByMessage } from "@/lib/reactions";
 
 export function ClassChatTab({ me }) {
   const { data: messages, isLoading } = useGroupMessages();
+  const { data: reactionRows } = useGroupReactions();
   const sendMessage = useSendGroupMessage(me);
+  const toggleReaction = useToggleGroupReaction(me);
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
   const scrollRef = useAutoScroll([messages]);
+
+  const reactionsByMessage = groupReactionsByMessage(reactionRows ?? [], me.id);
+
+  function handleToggleReaction(messageId, emoji) {
+    const existing = reactionsByMessage[messageId]?.find((r) => r.emoji === emoji);
+    toggleReaction.mutate({ messageId, emoji, reactionId: existing?.mine ? existing.mineReactionId : null });
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -41,11 +53,25 @@ export function ClassChatTab({ me }) {
         {isLoading && <ChatSkeleton />}
         {messages?.length === 0 && <EmptyState>No messages yet, say hello!</EmptyState>}
         {messages?.map((m) => (
-          <ChatBubble key={m.id} mine={m.sender_id === me.id} name={m.sender_name} text={m.text} time={m.created_at} />
+          <ChatBubble
+            key={m.id}
+            mine={m.sender_id === me.id}
+            name={m.sender_name}
+            text={m.text}
+            time={m.created_at}
+            reactions={reactionsByMessage[m.id]}
+            onToggleReaction={(emoji) => handleToggleReaction(m.id, emoji)}
+          />
         ))}
       </ChatScroll>
       <ErrorBanner className="mt-2.5">{error}</ErrorBanner>
-      <ChatInputForm value={input} onChange={(e) => setInput(e.target.value)} onSubmit={handleSubmit} placeholder="Write a message…" />
+      <ChatInputForm
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onEmojiSelect={(emoji) => setInput((prev) => prev + emoji)}
+        onSubmit={handleSubmit}
+        placeholder="Write a message…"
+      />
     </Panel>
   );
 }

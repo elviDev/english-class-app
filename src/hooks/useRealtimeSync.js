@@ -49,3 +49,12 @@ export const replaceSingleRowReducer = (matchesPayload) => (current, payload) =>
   if (payload.eventType === "DELETE" || !matchesPayload(payload)) return current;
   return payload.new;
 };
+
+/** A flat list where rows can be inserted, updated, or removed by id, e.g.
+ * message reactions (added and removed freely, not just appended to). */
+export const rowSetReducer = (list = [], payload) => {
+  if (payload.eventType === "INSERT") return [...list, payload.new];
+  if (payload.eventType === "DELETE") return list.filter((row) => row.id !== payload.old.id);
+  if (payload.eventType === "UPDATE") return list.map((row) => (row.id === payload.new.id ? payload.new : row));
+  return list;
+};

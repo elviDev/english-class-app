@@ -13,11 +13,15 @@ Runs free on Vercel's and Supabase's free tiers for a small class.
 - **Accounts**, email/password signup and login, plus a self-serve "forgot password" flow. New
   accounts are students by default; becoming the teacher requires a private setup code, checked
   only on the server.
-- **Class chat**, one shared, realtime group chat for the whole class.
-- **Messages**, private threads between the teacher and each student individually.
-- **Assignments**, the teacher posts assignments with instructions and an optional due date;
-  students submit answers; the teacher grades them with a grade and optional feedback. Grades
-  and new submissions appear live, without a page reload.
+- **Class chat**, one shared, realtime group chat for the whole class. Messages can carry emoji
+  (a built-in picker, no separate keyboard needed) and anyone can react to a message with an
+  emoji, visible live to everyone.
+- **Messages**, private threads between the teacher and each student individually, with the same
+  emoji and reactions support.
+- **Assignments**, the teacher posts assignments with instructions, an optional due date, and
+  optional file attachments (PDFs, images, documents, audio); students submit answers and
+  download any attached files; the teacher grades submissions with a grade and optional feedback.
+  Grades and new submissions appear live, without a page reload.
 - **Study Buddy**, an AI tutor (Gemini) students can chat with in English, Spanish, or a mix of
   both, for extra practice outside class. The teacher gets a read-only log of what students have
   been asking, to spot what to cover in class.

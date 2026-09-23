@@ -82,6 +82,7 @@ export function StudyBuddyChat({ me }) {
       <ChatInputForm
         value={input}
         onChange={(e) => setInput(e.target.value)}
+        onEmojiSelect={(emoji) => setInput((prev) => prev + emoji)}
         onSubmit={handleSubmit}
         placeholder="Ask in English or Spanish…"
         disabled={isPending}
