@@ -62,6 +62,7 @@ export function ClassChatTab({ me }) {
         {messages?.map((m) => {
           const mine = m.sender_id === me.id;
           const canDelete = mine || me.role === "teacher";
+          const deleted = Boolean(m.deleted_at);
           return (
             <ChatBubble
               key={m.id}
@@ -69,9 +70,10 @@ export function ClassChatTab({ me }) {
               name={m.sender_name}
               text={m.text}
               time={m.created_at}
+              deleted={deleted}
               reactions={reactionsByMessage[m.id]}
               onToggleReaction={(emoji) => handleToggleReaction(m.id, emoji)}
-              onDelete={canDelete ? () => handleDelete(m.id) : undefined}
+              onDelete={canDelete && !deleted ? () => handleDelete(m.id) : undefined}
             />
           );
         })}

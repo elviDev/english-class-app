@@ -43,7 +43,8 @@ create table group_messages (
   sender_id uuid not null references auth.users(id) on delete cascade,
   sender_name text not null,
   text text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  deleted_at timestamptz
 );
 
 create table direct_messages (
@@ -217,12 +218,18 @@ grant update (name) on profiles to authenticated;
 -- group_messages -----------------------------------------------
 create policy group_select on group_messages for select using (auth.role() = 'authenticated');
 create policy group_insert on group_messages for insert with check (sender_id = auth.uid());
--- Anyone can delete their own message; the teacher can delete anyone's
--- (moderation), enforced here so the app's own delete button is not what
--- actually stops someone from deleting a message that isn't theirs.
-create policy group_delete on group_messages for delete using (
+-- Deletes are soft (deleted_at gets set, the row and its text stay put)
+-- so everyone still sees a "this message was deleted" placeholder where it
+-- was. The sender can do this to their own message, the teacher to
+-- anyone's (moderation). The column grant below is what actually stops
+-- this same policy from being used to edit a message's real content.
+create policy group_soft_delete on group_messages for update using (
+  sender_id = auth.uid() or exists (select 1 from profiles where id = auth.uid() and role = 'teacher')
+) with check (
   sender_id = auth.uid() or exists (select 1 from profiles where id = auth.uid() and role = 'teacher')
 );
+revoke update on group_messages from authenticated;
+grant update (deleted_at) on group_messages to authenticated;
 
 -- direct_messages ------------------------------------------------
 create policy dm_select on direct_messages for select using (
@@ -538,4 +545,21 @@ create policy assignment_files_storage_delete on storage.objects for delete usin
 --   create policy group_delete on group_messages for delete using (
 --     sender_id = auth.uid() or exists (select 1 from profiles where id = auth.uid() and role = 'teacher')
 --   );
+-- ============================================================
+
+-- ============================================================
+-- Already ran the block above, and now want a "this message was deleted"
+-- placeholder left behind instead of the message vanishing outright? Run
+-- this on its own, in a new query. It's fine to leave the group_delete
+-- policy from the block above in place too, the app just stops using it.
+--
+--   alter table group_messages add column deleted_at timestamptz;
+--
+--   create policy group_soft_delete on group_messages for update using (
+--     sender_id = auth.uid() or exists (select 1 from profiles where id = auth.uid() and role = 'teacher')
+--   ) with check (
+--     sender_id = auth.uid() or exists (select 1 from profiles where id = auth.uid() and role = 'teacher')
+--   );
+--   revoke update on group_messages from authenticated;
+--   grant update (deleted_at) on group_messages to authenticated;
 -- ============================================================
