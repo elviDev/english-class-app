@@ -217,6 +217,12 @@ grant update (name) on profiles to authenticated;
 -- group_messages -----------------------------------------------
 create policy group_select on group_messages for select using (auth.role() = 'authenticated');
 create policy group_insert on group_messages for insert with check (sender_id = auth.uid());
+-- Anyone can delete their own message; the teacher can delete anyone's
+-- (moderation), enforced here so the app's own delete button is not what
+-- actually stops someone from deleting a message that isn't theirs.
+create policy group_delete on group_messages for delete using (
+  sender_id = auth.uid() or exists (select 1 from profiles where id = auth.uid() and role = 'teacher')
+);
 
 -- direct_messages ------------------------------------------------
 create policy dm_select on direct_messages for select using (
@@ -522,5 +528,14 @@ create policy assignment_files_storage_delete on storage.objects for delete usin
 --   create policy assignment_files_storage_delete on storage.objects for delete using (
 --     bucket_id = 'assignment-files'
 --     and exists (select 1 from profiles where id = auth.uid() and role = 'teacher')
+--   );
+-- ============================================================
+
+-- ============================================================
+-- Already ran everything above and just want to be able to delete class
+-- chat messages? Run this on its own, in a new query:
+--
+--   create policy group_delete on group_messages for delete using (
+--     sender_id = auth.uid() or exists (select 1 from profiles where id = auth.uid() and role = 'teacher')
 --   );
 -- ============================================================

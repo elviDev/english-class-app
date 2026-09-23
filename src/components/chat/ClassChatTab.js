@@ -13,6 +13,7 @@ import { useGroupMessages } from "@/hooks/chat/useGroupMessages";
 import { useSendGroupMessage } from "@/hooks/chat/useSendGroupMessage";
 import { useGroupReactions } from "@/hooks/chat/useGroupReactions";
 import { useToggleGroupReaction } from "@/hooks/chat/useToggleGroupReaction";
+import { useDeleteGroupMessage } from "@/hooks/chat/useDeleteGroupMessage";
 import { chatMessageSchema } from "@/schemas/chat";
 import { groupReactionsByMessage } from "@/lib/reactions";
 
@@ -21,6 +22,7 @@ export function ClassChatTab({ me }) {
   const { data: reactionRows } = useGroupReactions();
   const sendMessage = useSendGroupMessage(me);
   const toggleReaction = useToggleGroupReaction(me);
+  const deleteMessage = useDeleteGroupMessage();
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
   const scrollRef = useAutoScroll([messages]);
@@ -30,6 +32,11 @@ export function ClassChatTab({ me }) {
   function handleToggleReaction(messageId, emoji) {
     const existing = reactionsByMessage[messageId]?.find((r) => r.emoji === emoji);
     toggleReaction.mutate({ messageId, emoji, reactionId: existing?.mine ? existing.mineReactionId : null });
+  }
+
+  function handleDelete(messageId) {
+    if (!window.confirm("Delete this message? This can't be undone.")) return;
+    deleteMessage.mutate(messageId);
   }
 
   async function handleSubmit(e) {
@@ -52,17 +59,22 @@ export function ClassChatTab({ me }) {
       <ChatScroll ref={scrollRef}>
         {isLoading && <ChatSkeleton />}
         {messages?.length === 0 && <EmptyState>No messages yet, say hello!</EmptyState>}
-        {messages?.map((m) => (
-          <ChatBubble
-            key={m.id}
-            mine={m.sender_id === me.id}
-            name={m.sender_name}
-            text={m.text}
-            time={m.created_at}
-            reactions={reactionsByMessage[m.id]}
-            onToggleReaction={(emoji) => handleToggleReaction(m.id, emoji)}
-          />
-        ))}
+        {messages?.map((m) => {
+          const mine = m.sender_id === me.id;
+          const canDelete = mine || me.role === "teacher";
+          return (
+            <ChatBubble
+              key={m.id}
+              mine={mine}
+              name={m.sender_name}
+              text={m.text}
+              time={m.created_at}
+              reactions={reactionsByMessage[m.id]}
+              onToggleReaction={(emoji) => handleToggleReaction(m.id, emoji)}
+              onDelete={canDelete ? () => handleDelete(m.id) : undefined}
+            />
+          );
+        })}
       </ChatScroll>
       <ErrorBanner className="mt-2.5">{error}</ErrorBanner>
       <ChatInputForm

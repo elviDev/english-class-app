@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/query-keys";
-import { appendRowReducer, useRealtimeSync } from "@/hooks/useRealtimeSync";
+import { rowSetReducer, useRealtimeSync } from "@/hooks/useRealtimeSync";
 
 async function fetchGroupMessages() {
   const supabase = getSupabaseBrowserClient();
@@ -23,9 +23,9 @@ export function useGroupMessages() {
   useRealtimeSync({
     channelName: "group-chat",
     table: "group_messages",
-    event: "INSERT",
+    event: "*",
     queryKey,
-    reducer: appendRowReducer,
+    reducer: rowSetReducer,
   });
 
   return query;

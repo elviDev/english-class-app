@@ -33,8 +33,6 @@ export function useRealtimeSync({ enabled = true, channelName, table, event = "*
   }, [enabled, channelName, table, event, filter, filterKey]);
 }
 
-export const appendRowReducer = (list = [], payload) => [...list, payload.new];
-
 export const upsertRowReducer = (list = [], payload) => {
   if (payload.eventType === "DELETE") return list;
   const index = list.findIndex((row) => row.id === payload.new.id);
@@ -50,10 +48,19 @@ export const replaceSingleRowReducer = (matchesPayload) => (current, payload) =>
   return payload.new;
 };
 
-/** A flat list where rows can be inserted, updated, or removed by id, e.g.
- * message reactions (added and removed freely, not just appended to). */
+/**
+ * A flat list where rows can be inserted, updated, or removed by id (e.g.
+ * chat messages, which can now be deleted, or reactions, added and removed
+ * freely). INSERT is deduped by id, since the sender's own message is
+ * already appended directly from their mutation's response (see
+ * useSendGroupMessage) rather than waiting on this realtime echo, so both
+ * paths landing the same row must not double it up.
+ */
 export const rowSetReducer = (list = [], payload) => {
-  if (payload.eventType === "INSERT") return [...list, payload.new];
+  if (payload.eventType === "INSERT") {
+    if (list.some((row) => row.id === payload.new.id)) return list;
+    return [...list, payload.new];
+  }
   if (payload.eventType === "DELETE") return list.filter((row) => row.id !== payload.old.id);
   if (payload.eventType === "UPDATE") return list.map((row) => (row.id === payload.new.id ? payload.new : row));
   return list;
