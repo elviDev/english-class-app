@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { GraduationCap } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { SignupForm } from "@/components/auth/SignupForm";
 import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
@@ -27,14 +28,17 @@ export function AuthScreen() {
   function handleNeedsConfirmation(isTeacher) {
     setError(
       isTeacher
-        ? 'Account created, check your email, click the confirmation link, then log in and use the "I\'m the teacher" button at the top of the app to finish setup.'
+        ? 'Account created, check your email, click the confirmation link, then log in and use the "I\'m the teacher" button in the app to finish setup.'
         : "Account created, check your email and click the confirmation link, then log in."
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-6">
-      <div className="w-full max-w-[420px] rounded-2xl border border-line bg-paper px-8 py-9 shadow-[0_2px_18px_rgba(31,58,95,0.08)]">
+    <div className="flex min-h-screen items-center justify-center bg-cream p-6">
+      <div className="w-full max-w-[420px] animate-slide-up rounded-2xl border border-line bg-paper px-8 py-9 shadow-[0_2px_24px_rgb(31_58_95_/_8%)] dark:shadow-[0_2px_24px_rgb(0_0_0_/_35%)]">
+        <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-navy text-gold-light">
+          <GraduationCap size={22} strokeWidth={2} />
+        </span>
         <h1 className="mb-1 text-2xl">English Class</h1>
         <p className="mb-[22px] text-[0.98rem] text-muted">{SUBTITLES[mode]}</p>
         <ErrorBanner>{error}</ErrorBanner>

@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Ties the `dark:` utility variant to our [data-theme] attribute (set by
+   ThemeInit, see src/stores/theme-store.js) instead of the OS-level
+   prefers-color-scheme, so the in-app toggle is the source of truth. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme {
   --color-navy: #1f3a5f;
   --color-navy-dark: #152b47;
@@ -8,8 +13,10 @@
   --color-cream: #f7f3ec;
   --color-paper: #ffffff;
   --color-ink: #23262b;
+  --color-heading: #1f3a5f;
   --color-muted: #6b7280;
   --color-line: #e4dcc9;
+  --color-hover: rgb(31 58 95 / 5%);
   --color-danger: #b3432b;
   --color-danger-bg: #fbeae5;
   --color-danger-line: #e7b7a8;
@@ -20,11 +27,74 @@
 
   --font-serif: var(--font-lora), ui-serif, Georgia, serif;
   --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+
+  --animate-fade-in: fade-in 0.3s ease-out;
+  --animate-slide-up: slide-up 0.25s ease-out;
+  --animate-slide-down: slide-down 0.2s ease-out;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes slide-down {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Dark palette: same navy/gold identity, inverted surfaces. Redefining the
+   variables here (rather than sprinkling dark: on every element) means
+   every existing bg-cream / text-ink / border-line utility across the app
+   adapts automatically. --color-heading swaps to gold in dark mode since
+   the light-mode navy heading color doesn't have enough contrast against a
+   dark background to stay readable. */
+:root[data-theme="dark"] {
+  --color-navy: #2c4d78;
+  --color-navy-dark: #1f3a5f;
+  --color-cream: #0f1826;
+  --color-paper: #16233a;
+  --color-ink: #eef1f6;
+  --color-heading: #e7c874;
+  --color-muted: #93a2ba;
+  --color-line: #26344d;
+  --color-hover: rgb(255 255 255 / 6%);
+  --color-danger: #ff8a65;
+  --color-danger-bg: #3a1f1a;
+  --color-danger-line: #5c2e26;
+  --color-good: #6fcf9e;
+  --color-ai: #b9a6f2;
+  --color-ai-bg: #241f3d;
+  --color-ai-line: #372f5c;
+  color-scheme: dark;
 }
 
 @layer base {
   * {
     box-sizing: border-box;
+  }
+
+  html {
+    color-scheme: light;
   }
 
   body {
@@ -34,13 +104,14 @@
     font-family: var(--font-sans);
     font-size: 17px;
     line-height: 1.5;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   h1,
   h2,
   h3 {
     font-family: var(--font-serif);
-    color: var(--color-navy);
+    color: var(--color-heading);
     margin: 0 0 0.4em;
   }
 
@@ -54,5 +125,10 @@
   textarea {
     font-family: inherit;
     font-size: 1rem;
+  }
+
+  ::selection {
+    background-color: var(--color-gold-light);
+    color: var(--color-navy-dark);
   }
 }

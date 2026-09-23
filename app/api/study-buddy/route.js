@@ -75,7 +75,10 @@ export async function POST(request) {
   }
 
   const model = process.env.GEMINI_MODEL || "gemini-flash-lite-latest";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  // Streaming (alt=sse) instead of the buffered generateContent endpoint:
+  // this is what lets the reply start appearing as it's written instead of
+  // only after the whole answer has finished generating.
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
   const contents = [];
   for (const turn of history.slice(-10)) {
@@ -87,9 +90,9 @@ export async function POST(request) {
   }
   contents.push({ role: "user", parts: [{ text: message }] });
 
-  let reply;
+  let geminiRes;
   try {
-    const res = await fetch(url, {
+    geminiRes = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -97,41 +100,82 @@ export async function POST(request) {
           parts: [{ text: SYSTEM_INSTRUCTION + `\n\nThe student's name is ${studentName}.` }],
         },
         contents,
-        generationConfig: { temperature: 0.6, maxOutputTokens: 400 },
+        // Kept modest so a reply that ignores "keep it short" still can't
+        // run on for a long time; the system instruction handles the rest.
+        generationConfig: { temperature: 0.6, maxOutputTokens: 300 },
       }),
     });
-
-    if (res.status === 429) {
-      return NextResponse.json(
-        { error: "Study Buddy is a little busy right now (free daily limit reached). Try again in a few minutes." },
-        { status: 429 }
-      );
-    }
-    if (!res.ok) {
-      const errText = await res.text().catch(() => "");
-      console.error("Gemini API error:", res.status, errText);
-      return NextResponse.json({ error: "Study Buddy couldn't answer that just now. Please try again." }, { status: 502 });
-    }
-
-    const data = await res.json();
-    reply = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "";
-    if (!reply) {
-      return NextResponse.json({ error: "Study Buddy didn't understand that. Try rephrasing?" }, { status: 502 });
-    }
   } catch (err) {
     console.error("Study Buddy request failed:", err);
     return NextResponse.json({ error: "Couldn't reach Study Buddy. Check your connection and try again." }, { status: 502 });
   }
 
-  // Log the exchange server-side, using the real verified student id/name
-  // and the real reply, never data the browser could have made up. If
-  // this fails, the student still gets their answer; we just skip the log.
-  admin
-    .from("study_buddy_logs")
-    .insert({ student_id: userData.user.id, student_name: studentName, question: message, answer: reply })
-    .then(({ error }) => {
-      if (error) console.error("Failed to log Study Buddy exchange:", error);
-    });
+  if (geminiRes.status === 429) {
+    return NextResponse.json(
+      { error: "Study Buddy is a little busy right now (free daily limit reached). Try again in a few minutes." },
+      { status: 429 }
+    );
+  }
+  if (!geminiRes.ok || !geminiRes.body) {
+    const errText = await geminiRes.text().catch(() => "");
+    console.error("Gemini API error:", geminiRes.status, errText);
+    return NextResponse.json({ error: "Study Buddy couldn't answer that just now. Please try again." }, { status: 502 });
+  }
 
-  return NextResponse.json({ reply });
+  // Re-parse Gemini's SSE frames into a plain text stream: the browser just
+  // wants the reply's characters as they arrive, not the JSON envelope
+  // around each chunk.
+  const stream = new ReadableStream({
+    async start(controller) {
+      const reader = geminiRes.body.getReader();
+      const decoder = new TextDecoder();
+      const encoder = new TextEncoder();
+      let buffer = "";
+      let full = "";
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith("data:")) continue;
+            const jsonStr = trimmed.slice(5).trim();
+            if (!jsonStr) continue;
+            try {
+              const chunk = JSON.parse(jsonStr);
+              const text = chunk?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "";
+              if (text) {
+                full += text;
+                controller.enqueue(encoder.encode(text));
+              }
+            } catch {
+              // Ignore a partial/malformed SSE frame; the next one carries on.
+            }
+          }
+        }
+      } finally {
+        controller.close();
+        // Log the exchange server-side, using the real verified student
+        // id/name and the real reply, never data the browser could have
+        // made up. If this fails, the student still got their answer.
+        if (full) {
+          admin
+            .from("study_buddy_logs")
+            .insert({ student_id: userData.user.id, student_name: studentName, question: message, answer: full })
+            .then(({ error }) => {
+              if (error) console.error("Failed to log Study Buddy exchange:", error);
+            });
+        }
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+  });
 }

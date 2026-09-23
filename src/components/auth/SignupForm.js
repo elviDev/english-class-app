@@ -55,7 +55,7 @@ export function SignupForm({ onError, onNeedsConfirmation }) {
       <Field label="Password (at least 8 characters)">
         <PasswordInput required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
       </Field>
-      <label className="mb-4 flex items-center gap-2 text-sm font-semibold text-navy">
+      <label className="mb-4 flex items-center gap-2 text-sm font-semibold text-heading">
         <input type="checkbox" checked={isTeacher} onChange={(e) => setIsTeacher(e.target.checked)} />
         I&apos;m the teacher
       </label>

@@ -1,3 +1,4 @@
+import { Send } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -12,8 +13,9 @@ export function ChatInputForm({ value, onChange, onSubmit, placeholder, disabled
         required
         disabled={disabled}
       />
-      <Button variant="pill" type="submit" className="px-5" disabled={disabled}>
+      <Button variant="pill" type="submit" className="flex items-center gap-1.5 px-5" disabled={disabled}>
         {submitLabel}
+        <Send size={15} strokeWidth={2.5} />
       </Button>
     </form>
   );

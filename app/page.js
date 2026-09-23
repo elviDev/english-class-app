@@ -7,7 +7,7 @@ import { RootView } from "@/components/layout/RootView";
 export default async function Page() {
   if (!isSupabaseConfigured) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-6">
+      <div className="flex min-h-screen items-center justify-center bg-cream p-6">
         <div className="w-full max-w-[420px] rounded-2xl border border-line bg-paper p-9">
           <ConfigWarning />
         </div>

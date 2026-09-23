@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 const fieldStyles =
-  "w-full rounded-lg border-[1.5px] border-line bg-white px-3 py-2.5 text-ink focus:border-gold focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-gold";
+  "w-full rounded-xl border border-line bg-paper px-3.5 py-2.5 text-ink transition-colors placeholder:text-muted/70 focus:border-gold focus:outline focus:outline-2 focus:outline-offset-1 focus:outline-gold/50";
 
 export function Input({ className, ...props }) {
   return <input className={cn(fieldStyles, className)} {...props} />;

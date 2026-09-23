@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PenSquare } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Field } from "@/components/ui/Field";
 import { Input, TextArea } from "@/components/ui/Input";
@@ -33,7 +34,10 @@ export function NewAssignmentForm({ meId }) {
 
   return (
     <Panel>
-      <h2>Post a new assignment</h2>
+      <h2 className="flex items-center gap-2">
+        <PenSquare size={18} strokeWidth={2} />
+        Post a new assignment
+      </h2>
       <form onSubmit={handleSubmit}>
         <Field label="Title">
           <Input value={title} onChange={(e) => setTitle(e.target.value)} required />

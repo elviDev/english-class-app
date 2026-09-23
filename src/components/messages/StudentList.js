@@ -1,7 +1,10 @@
 "use client";
 
+import { ChevronRight } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Avatar } from "@/components/ui/Avatar";
+import { ListRowSkeleton } from "@/components/ui/Skeleton";
 import { useStudents } from "@/hooks/messages/useStudents";
 
 export function StudentList({ onOpen }) {
@@ -11,21 +14,18 @@ export function StudentList({ onOpen }) {
     <Panel>
       <h2>Messages</h2>
       <div className="flex flex-col gap-1.5">
-        {isLoading && <EmptyState>Loading…</EmptyState>}
+        {isLoading && <ListRowSkeleton />}
         {students?.length === 0 && <EmptyState>No students have joined yet.</EmptyState>}
         {students?.map((s) => (
-          <div
+          <button
             key={s.id}
-            className="flex items-center justify-between rounded-[10px] border border-line bg-white px-3.5 py-3"
+            onClick={() => onOpen(s)}
+            className="flex animate-fade-in items-center gap-3 rounded-xl border border-line bg-paper px-3.5 py-3 text-left transition-all hover:-translate-y-px hover:border-gold/60 hover:shadow-sm"
           >
-            <span>{s.name}</span>
-            <button
-              onClick={() => onOpen(s)}
-              className="rounded-md bg-navy px-3.5 py-[7px] font-bold text-white transition-colors hover:bg-navy-dark"
-            >
-              Open chat
-            </button>
-          </div>
+            <Avatar name={s.name} size="sm" />
+            <span className="flex-1 font-semibold text-ink">{s.name}</span>
+            <ChevronRight size={18} strokeWidth={2} className="text-muted" />
+          </button>
         ))}
       </div>
     </Panel>

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CheckCircle2, Clock } from "lucide-react";
 import { AssignmentCard, AssignmentMeta } from "@/components/assignments/AssignmentCard";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { Badge } from "@/components/ui/Badge";
 import { TextArea } from "@/components/ui/Input";
@@ -36,10 +37,11 @@ export function StudentAssignmentCard({ assignment, me }) {
   return (
     <AssignmentCard>
       <AssignmentMeta assignment={assignment} />
-      {isLoading && <EmptyState>Loading…</EmptyState>}
+      {isLoading && <Skeleton className="h-16 w-full" />}
       {submission && submission.grade ? (
-        <div className="mt-2.5 rounded-lg bg-cream p-3.5">
-          <Badge tone="good" className="mb-1.5">
+        <div className="mt-2.5 rounded-xl bg-cream p-3.5">
+          <Badge tone="good" className="mb-1.5 inline-flex items-center gap-1">
+            <CheckCircle2 size={13} strokeWidth={2.5} />
             Grade: {submission.grade}
           </Badge>
           <div>
@@ -52,8 +54,9 @@ export function StudentAssignmentCard({ assignment, me }) {
           )}
         </div>
       ) : submission ? (
-        <div className="mt-2.5 rounded-lg bg-cream p-3.5">
-          <Badge tone="muted" className="mb-1.5">
+        <div className="mt-2.5 rounded-xl bg-cream p-3.5">
+          <Badge tone="muted" className="mb-1.5 inline-flex items-center gap-1">
+            <Clock size={13} strokeWidth={2.5} />
             Submitted, awaiting grade
           </Badge>
           <div>

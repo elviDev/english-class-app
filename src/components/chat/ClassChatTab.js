@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Panel } from "@/components/ui/Panel";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ChatSkeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { ChatBubble } from "@/components/chat/ChatBubble";
 import { ChatScroll } from "@/components/chat/ChatScroll";
@@ -37,7 +38,7 @@ export function ClassChatTab({ me }) {
     <Panel>
       <h2>Class chat</h2>
       <ChatScroll ref={scrollRef}>
-        {isLoading && <EmptyState>Loading…</EmptyState>}
+        {isLoading && <ChatSkeleton />}
         {messages?.length === 0 && <EmptyState>No messages yet, say hello!</EmptyState>}
         {messages?.map((m) => (
           <ChatBubble key={m.id} mine={m.sender_id === me.id} name={m.sender_name} text={m.text} time={m.created_at} />

@@ -1,6 +1,7 @@
 "use client";
 
 import { EmptyState } from "@/components/ui/EmptyState";
+import { CardSkeleton } from "@/components/ui/Skeleton";
 import { NewAssignmentForm } from "@/components/assignments/NewAssignmentForm";
 import { TeacherAssignmentCard } from "@/components/assignments/TeacherAssignmentCard";
 import { StudentAssignmentCard } from "@/components/assignments/StudentAssignmentCard";
@@ -12,7 +13,7 @@ export function AssignmentsTab({ me }) {
   return (
     <div>
       {me.role === "teacher" && <NewAssignmentForm meId={me.id} />}
-      {isLoading && <EmptyState>Loading…</EmptyState>}
+      {isLoading && <CardSkeleton />}
       {assignments?.length === 0 && <EmptyState>No assignments posted yet.</EmptyState>}
       {assignments?.map((a) =>
         me.role === "teacher" ? (

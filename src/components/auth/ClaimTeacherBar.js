@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { UserCog } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Button } from "@/components/ui/Button";
@@ -31,9 +32,12 @@ export function ClaimTeacherBar({ onClose }) {
   }
 
   return (
-    <Panel className="mx-5 max-w-[780px] md:mx-auto">
+    <Panel className="animate-slide-down">
       <form className="flex flex-wrap items-center gap-2.5" onSubmit={handleSubmit}>
-        <strong className="text-navy">Teacher setup code:</strong>
+        <strong className="flex items-center gap-1.5 text-heading">
+          <UserCog size={16} strokeWidth={2} />
+          Teacher setup code:
+        </strong>
         <PasswordInput
           autoFocus
           autoComplete="off"

@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { Sparkles } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { ChatBubble } from "@/components/chat/ChatBubble";
 import { ChatScroll } from "@/components/chat/ChatScroll";
 import { ChatInputForm } from "@/components/chat/ChatInputForm";
+import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
 import { useSendStudyBuddyMessage } from "@/hooks/study-buddy/useSendStudyBuddyMessage";
 import { studyBuddyMessageSchema } from "@/schemas/study-buddy";
@@ -15,20 +17,38 @@ export function StudyBuddyChat({ me }) {
   const [turns, setTurns] = useState([]); // { role: "user" | "ai", text }
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
-  const sendMessage = useSendStudyBuddyMessage();
-  const scrollRef = useAutoScroll([turns, sendMessage.isPending]);
+  const { sendMessage, isPending } = useSendStudyBuddyMessage();
+  const scrollRef = useAutoScroll([turns, isPending]);
+  // Only show "thinking" before the reply starts streaming in; once the AI
+  // bubble is appended (see onDelta below) it takes over as the live text.
+  const showThinking = isPending && turns[turns.length - 1]?.role !== "ai";
 
   async function handleSubmit(e) {
     e.preventDefault();
     const parsed = studyBuddyMessageSchema.safeParse({ message: input });
-    if (!parsed.success || sendMessage.isPending) return;
+    if (!parsed.success || isPending) return;
     setError("");
     setInput("");
     const history = turns;
     setTurns((prev) => [...prev, { role: "user", text: parsed.data.message }]);
+
+    let appended = false;
     try {
-      const reply = await sendMessage.mutateAsync({ message: parsed.data.message, history });
-      setTurns((prev) => [...prev, { role: "ai", text: reply }]);
+      await sendMessage({
+        message: parsed.data.message,
+        history,
+        onDelta: (fullTextSoFar) => {
+          setTurns((prev) => {
+            if (!appended) {
+              appended = true;
+              return [...prev, { role: "ai", text: fullTextSoFar }];
+            }
+            const next = [...prev];
+            next[next.length - 1] = { role: "ai", text: fullTextSoFar };
+            return next;
+          });
+        },
+      });
     } catch (err) {
       setError(err.message || "Couldn't reach Study Buddy. Check your connection and try again.");
     }
@@ -36,8 +56,11 @@ export function StudyBuddyChat({ me }) {
 
   return (
     <Panel>
-      <h2>Study Buddy</h2>
-      <p className="mb-4 rounded-[10px] border border-ai-line bg-ai-bg px-4 py-3.5 text-[0.95rem]">
+      <h2 className="flex items-center gap-2">
+        <Sparkles size={18} strokeWidth={2} />
+        Study Buddy
+      </h2>
+      <p className="mb-4 rounded-xl border border-ai-line bg-ai-bg px-4 py-3.5 text-[0.95rem]">
         Ask about grammar, vocabulary, or practice a short conversation in English, in English, in Spanish, or a mix
         of both. Study Buddy understands Spanish and will help you find the English words. It&apos;s an AI, so it
         can make mistakes, bring good questions back to class too.
@@ -53,7 +76,7 @@ export function StudyBuddyChat({ me }) {
             variant={t.role === "ai" ? "ai" : undefined}
           />
         ))}
-        {sendMessage.isPending && <p className="px-2 py-1 text-sm italic text-muted">Study Buddy is thinking…</p>}
+        {showThinking && <TypingIndicator name="Study Buddy" variant="ai" />}
       </ChatScroll>
       <ErrorBanner className="mt-2.5">{error}</ErrorBanner>
       <ChatInputForm
@@ -61,7 +84,7 @@ export function StudyBuddyChat({ me }) {
         onChange={(e) => setInput(e.target.value)}
         onSubmit={handleSubmit}
         placeholder="Ask in English or Spanish…"
-        disabled={sendMessage.isPending}
+        disabled={isPending}
       />
     </Panel>
   );

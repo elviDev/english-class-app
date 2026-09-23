@@ -86,7 +86,7 @@ export function ResetPasswordGate({ initialHasSession }) {
           {error ||
             "This password reset link is invalid or has expired. Go back and request a new one from the sign-in page."}
         </p>
-        <a href="/" className="font-bold text-navy underline">
+        <a href="/" className="font-bold text-heading underline underline-offset-2">
           Back to sign in
         </a>
       </>
