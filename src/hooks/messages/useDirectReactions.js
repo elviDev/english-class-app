@@ -17,9 +17,16 @@ async function fetchDirectReactions() {
 
 export function useDirectReactions() {
   const queryKey = queryKeys.directReactions();
-  const query = useQuery({ queryKey, queryFn: fetchDirectReactions });
+  // No retries: if the table doesn't exist yet (the reactions migration
+  // hasn't been run), fail once and stay quiet rather than hammering the
+  // endpoint.
+  const query = useQuery({ queryKey, queryFn: fetchDirectReactions, retry: false });
 
   useRealtimeSync({
+    // See useGroupReactions for why this waits for a successful fetch
+    // first: subscribing to a table that doesn't exist yet left Realtime
+    // retrying forever on the shared socket, degrading unrelated channels.
+    enabled: query.isSuccess,
     channelName: "direct-reactions",
     table: "direct_message_reactions",
     event: "*",

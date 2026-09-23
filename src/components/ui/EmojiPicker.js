@@ -33,7 +33,7 @@ export function EmojiPicker({ onSelect }) {
           className="w-full rounded-lg border border-line bg-cream py-1.5 pl-8 pr-2.5 text-sm text-ink outline-none focus:border-gold"
         />
       </div>
-      <div className="max-h-64 overflow-y-auto">
+      <div className="max-h-64 overflow-y-auto overflow-x-hidden">
         {filtered.length === 0 && <p className="py-6 text-center text-sm text-muted">No emoji found.</p>}
         {filtered.map((category) => (
           <div key={category.name} className="mb-2">
@@ -44,7 +44,7 @@ export function EmojiPicker({ onSelect }) {
                   key={emoji}
                   type="button"
                   onClick={() => onSelect(emoji)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-lg transition-colors hover:bg-hover"
+                  className="flex aspect-square w-full min-w-0 items-center justify-center rounded-lg text-lg transition-colors hover:bg-hover"
                 >
                   {emoji}
                 </button>
